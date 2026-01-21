@@ -1,0 +1,359 @@
+---
+title: Volcanoplots fro the paper.
+author: "Maksim Chelushkin"
+date: " `r format(Sys.time(), '%A %B %d, %Y (%H:%M:%S)')` "
+output:
+  html_document: 
+    toc: yes
+    toc_float: yes
+    code_folding: hide
+    mode: selfcontained
+    fig_caption: yes
+fontsize: 9pt
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, dpi=100, include = TRUE)
+library(reticulate)
+library(EnhancedVolcano)
+use_condaenv("resistance", required = TRUE)
+```
+
+```{python}
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib
+import seaborn as sns
+import numpy as np
+```
+
+## Control
+
+```{python}
+contr_postin = pd.read_csv('../../processed_data/diff_results/full_control_t1_1_postinduction_vs_baseline_paired_tonic.csv', sep=',', index_col=0)
+```
+
+
+```{r, fig.width=9, fig.height=8}
+buffer_df <- py$contr_postin
+chosen_xlim <- max(abs(min(buffer_df[['log2FoldChange']], na.rm = TRUE)), abs(max(buffer_df[['log2FoldChange']], na.rm = TRUE)))
+EnhancedVolcano(buffer_df,
+                lab = rownames(buffer_df),
+                x = 'log2FoldChange',
+                y = 'padj',
+                selectLab =  rownames(buffer_df[buffer_df$pvalue<0.0000001, ]),#
+                title = '',
+                titleLabSize = 15,
+                subtitle='',
+                subtitleLabSize = 14,
+                ylab = bquote(~-log[10] ~ '(adjusted p-value)'),
+                xlab = bquote('Log2FC\nHigher at baseline <--> Higher after 2 weeks waiting'),
+                axisLabSize = 20,
+                ylim = c(0, max(max(-log10(buffer_df[['padj']]), na.rm = TRUE), -log10(0.1)) + 0.3),
+                xlim = c(-chosen_xlim - 0.3, chosen_xlim + 0.3),
+                pCutoff = 0.1,
+                FCcutoff = 0.5,
+                pointSize = 1.5,
+                labSize=4.0,
+                legendPosition = 'none',
+                widthConnectors = 0.35,
+                arrowheads = F,
+                drawConnectors=TRUE,
+                boxedLabels = T,
+                caption = '',
+                max.overlaps = 30,
+                col = c("grey30", "grey30", "grey30", "red2")
+)
+ggsave("SupplFig_5C_full_control_ind.pdf")
+```
+```{python}
+cyto = ['CCL13', 'CCL18', 'CCL23','CCL24', 'CCL8'] + ['IL10', 'IL10RA', 'IL1RN', 'IL21R', 'IL33', 'IL7R', 'IL9R'] + ['CCR5', 'CCR6', 'CCR8', 'CXCR2'] + ['CXCL12', 'CXCL14']
+emt = ['COL1A1', 'COL1A2', 'COL3A1', 'MMP13', 'MMP16', 'MMP19', 'MMP2', 'MMP28', 'MMP8', 'FAP', 'ECM2', 'PCOLCE', 'TGFB3', 'TGFBR2']
+ang = ['SERPINA5', 'SERPINF1', 'SERPING1', 'VWF', 'ANGPT1', 'SERPINA7'] + ['VEGFA']
+macro = ['CD14', 'CD163', 'CD68', 'CSF1R', 'SIGLEC1'] + ['MIF']
+tcells = ['GZMM', 'PRF1', 'UBASH3A', 'TNFSF14', 'GZMA', 'GZMK'] + ['VSIR', 'CD274', 'PDCD1LG2', 'HAVCR2']
+antg = ['CD209', 'CD86', 'HLA-DOA', 'HLA-DPB2', 'HLA-DMB', 'HLA-DRB1', 'HLA-DRB5', 'TASL', 'TLR3', 'TLR4', 'TLR8']
+appt = ['CASP10', 'FAS', 'FASLG']
+dif4 = cyto + emt + ang + macro + tcells + antg + appt + ['STAT4']
+```
+
+```{python}
+cis_on_show = ['B2M', 'CCL18', 'CD163', 'CD68', 'CD86', 'CD274', 'CIITA', 'COL6A5', 'CXCL12', 'CXCL13', 'CXCL9', 'CXCR6', 'FAS', 'FASL', 'GZMA', 'GZMK', 'IFNG', 'IL10', 'IL10RA', 'IL18', 'IL18BP', 'IL2RA', 'IL2RB', 'IRF1', 'IRF8', 'JAK2', 'LAG3', 'MIF', 'PDCD1LG2', 'PRF1', 'SERPING1', 'STAT1', 'TLR2', 'TLR8', 'UBASH3A', 'VWF']
+hla_cis_on = ['HLA-A', 'HLA-B', 'HLA-DMA', 'HLA-DMB', 'HLA-DOA', 'HLA-DPA1', 'HLA-DPB1', 'HLA-DQA1', 'HLA-DQA2', 'HLA-DQB1', 'HLA-DQB2', 'HLA-DRA', 'HLA-DRB1', 'HLA-DRB5', 'HLA-DRB6', 'HLA-E', 'HLA-H']
+comb_cis_on = cis_on_show + hla_cis_on
+```
+
+```{python}
+contr_postin_sign = contr_postin[(abs(contr_postin.log2FoldChange) > 0.5) & (contr_postin.padj < 0.1)]
+int_genes = set(dif4).union(set(comb_cis_on))
+to_show_contr_postin = list(set(contr_postin_sign.index).intersection(set(int_genes)))
+```
+
+
+```{r, fig.width=9, fig.height=8}
+buffer_df <- py$contr_postin
+EnhancedVolcano(buffer_df,
+                lab = rownames(buffer_df),
+                x = 'log2FoldChange',
+                y = 'padj',
+                selectLab =  py$to_show_contr_postin,
+                title = '',
+                titleLabSize = 15,
+                subtitle='',
+                subtitleLabSize = 14,
+                ylab = bquote(~-log[10] ~ '(adjusted p-value)'),
+                xlab = bquote('Log2FC\nHigher at baseline <--> Higher atfter 2 weeks waiting'),
+                axisLabSize = 20,
+                ylim = c(0, 6),
+                xlim = c(-1.7, 1.7),
+                pCutoff = 0.1,
+                FCcutoff = 0.5,
+                pointSize = 1.5,
+                labSize=4.0,
+                legendPosition = 'none',
+                widthConnectors = 0.35,
+                arrowheads = F,
+                drawConnectors=TRUE,
+                boxedLabels = T,
+                caption = '',
+                max.overlaps = 30,
+                col = c("grey30", "grey30", "grey30", "red2")
+)
+ggsave("SupplFig_5D_zoomed_control_ind.pdf")
+```
+
+```{python}
+contr_on = pd.read_csv('../../processed_data/diff_results/full_control_t1_2_t2_on_nivo_vs_baseline_paired_tonic.csv', sep=',', index_col=0)
+```
+
+```{r, fig.width=7, fig.height=8}
+buffer_df <- py$contr_on
+EnhancedVolcano(buffer_df,
+                lab = rownames(buffer_df),
+                x = 'log2FoldChange',
+                y = 'padj',
+                title = '',
+                titleLabSize = 15,
+                subtitle='',
+                subtitleLabSize = 14,
+                ylab = bquote(~-log[10] ~ '(adjusted p-value)'),
+                xlab = bquote('Log2FC\nHigher at baseline <--> Higher at on-nivo'),
+                axisLabSize = 20,
+                ylim = c(0, 2),
+                xlim = c(-7.5,7.5),
+                pCutoff = 0.1,
+                FCcutoff = 0.5,
+                pointSize = 2,
+                labSize=6.0,
+                legendPosition = 'none',
+                widthConnectors = 0.35,
+                arrowheads = F,
+                drawConnectors=TRUE,
+                boxedLabels = T,
+                caption = '',
+                max.overlaps = 30,
+                col = c("grey30", "grey30", "grey30", "red2")
+)
+ggsave("SupplFig_3E_full_control_onnivo.pdf")
+```
+
+## Doxorubicin
+
+```{python}
+dox_on = pd.read_csv('../../processed_data/diff_results/full_doxo_on_nivo_vs_baseline_paired_tonic.csv', sep=',', index_col=0)
+```
+
+```{r, fig.width=7, fig.height=8}
+buffer_df <- py$dox_on
+chosen_xlim <- max(abs(min(buffer_df[['log2FoldChange']], na.rm = TRUE)), abs(max(buffer_df[['log2FoldChange']], na.rm = TRUE)))
+EnhancedVolcano(buffer_df,
+                lab = rownames(buffer_df),
+                x = 'log2FoldChange',
+                y = 'padj',
+                selectLab =  c('CXCL9', 'CXCR6', 'IL2RB', 'PDCD1', 'TIGIT', 'TNFRSF9', 'TRAF1'),
+                title = '',
+                titleLabSize = 15,
+                subtitle='',
+                subtitleLabSize = 14,
+                ylab = bquote(~-log[10] ~ '(adjusted p-value)'),
+                xlab = bquote('Log2FC\nHigher at baseline <--> Higher at On-nivo'),
+                axisLabSize = 20,
+                ylim = c(0, 2), 
+                xlim = c(-7.5, 7.5),
+                pCutoff = 0.1,
+                FCcutoff = 0.5,
+                pointSize = 2.0,
+                labSize=6.0,
+                legendPosition = 'none',
+                widthConnectors = 0.35,
+                arrowheads = F,
+                drawConnectors=TRUE,
+                boxedLabels = T,
+                caption = '',
+                max.overlaps = 30,
+                col = c("grey30", "grey30", "grey30", "red2")
+)
+ggsave("SupplFig_3D_Doxo_baseline_vs_OnNivo.pdf")
+```
+
+## Cisplatin
+
+```{python}
+cis_postin = pd.read_csv('../../processed_data/diff_results/full_cis_postinduction_vs_baseline_paired_tonic.csv', sep=',', index_col=0)
+```
+
+
+```{python}
+cyto = ['CCL13', 'CCL18', 'CCL23','CCL24', 'CCL8'] + ['IL10', 'IL10RA', 'IL1RN', 'IL21R', 'IL33', 'IL7R', 'IL9R'] + ['CCR5', 'CCR6', 'CCR8', 'CXCR2'] + ['CXCL12', 'CXCL14']
+emt = ['COL1A1', 'COL1A2', 'COL3A1', 'MMP13', 'MMP16', 'MMP19', 'MMP2', 'MMP28', 'MMP8', 'FAP', 'ECM2', 'PCOLCE', 'TGFB3', 'TGFBR2']
+ang = ['SERPINA5', 'SERPINF1', 'SERPING1', 'VWF', 'ANGPT1', 'SERPINA7'] + ['VEGFA']
+macro = ['CD14', 'CD163', 'CD68', 'CSF1R', 'SIGLEC1'] + ['MIF']
+tcells = ['GZMM', 'PRF1', 'UBASH3A', 'TNFSF14', 'GZMA', 'GZMK'] + ['VSIR', 'CD274', 'PDCD1LG2', 'HAVCR2']
+antg = ['CD209', 'CD86', 'HLA-DOA', 'HLA-DPB2', 'HLA-DMB', 'HLA-DRB1', 'HLA-DRB5', 'TASL', 'TLR3', 'TLR4', 'TLR8']
+appt = ['CASP10', 'FAS', 'FASLG']
+dif4 = cyto + emt + ang + macro + tcells + antg + appt + ['STAT4']
+```
+
+
+```{r, fig.width=16, fig.height=8}
+pdf.options(useDingbats = TRUE)
+buffer_df <- py$cis_postin
+chosen_xlim <- 8.6
+EnhancedVolcano(buffer_df,
+                lab = rownames(buffer_df),
+                x = 'log2FoldChange',
+                y = 'padj',
+                selectLab =  py$dif4,
+                title = '',
+                titleLabSize = 15,
+                subtitle='',
+                subtitleLabSize = 14,
+                ylab = bquote(~-log[10] ~ '(adjusted p-value)'),
+                xlab = bquote('Log2FC\nHigher at baseline <--> Higher at postinduction'),
+                axisLabSize = 20,
+                ylim = c(0, max(max(-log10(buffer_df[['padj']]), na.rm = TRUE), -log10(0.1)) + 0.3),
+                xlim = c(-1.7, 1.7),
+                pCutoff = 0.1,
+                FCcutoff = 0.5,
+                pointSize = 2.0,
+                labSize=5.0,
+                legendPosition = 'none',
+                widthConnectors = 0.35,
+                arrowheads = F,
+                drawConnectors=TRUE,
+                boxedLabels = T,
+                caption = '',
+                max.overlaps = 50,
+                col = c("grey30", "grey30", "grey30", "red2")
+)
+ggsave("SupplFig_5B_zoomed_Cis_baseline_vs_postinduction.pdf", useDingbats = TRUE)
+```
+
+```{r, fig.width=16, fig.height=8}
+buffer_df <- py$cis_postin
+chosen_xlim <- max(abs(min(buffer_df[['log2FoldChange']], na.rm = TRUE)), abs(max(buffer_df[['log2FoldChange']], na.rm = TRUE)))
+EnhancedVolcano(buffer_df,
+                lab = rownames(buffer_df),
+                x = 'log2FoldChange',
+                y = 'padj',
+                title = '',
+                titleLabSize = 15,
+                subtitle='',
+                subtitleLabSize = 14,
+                ylab = bquote(~-log[10] ~ '(adjusted p-value)'),
+                xlab = bquote('Log2FC\nHigher at baseline <--> Higher at postinduction'),
+                axisLabSize = 20,
+                ylim = c(0, max(max(-log10(buffer_df[['padj']]), na.rm = TRUE), -log10(0.1)) + 0.3),
+                xlim = c(-chosen_xlim - 0.3, chosen_xlim + 0.3),
+                pCutoff = 0.1,
+                FCcutoff = 0.5,
+                pointSize = 2.0,
+                labSize=5.0,
+                legendPosition = 'none',
+                widthConnectors = 0.35,
+                arrowheads = F,
+                drawConnectors=TRUE,
+                boxedLabels = T,
+                caption = '',
+                max.overlaps = 50,
+                col = c("grey30", "grey30", "grey30", "red2")
+)
+ggsave("SupplFig_5A_full_Cis_baseline_vs_postinduction.pdf")
+```
+
+
+```{python}
+cis_on = pd.read_csv('../../processed_data/diff_results/full_cis_on_nivo_vs_baseline_paired_tonic.csv', sep=',', index_col=0)
+```
+
+```{python}
+cis_on_show = ['B2M', 'CCL18', 'CD163', 'CD68', 'CD86', 'CD274', 'CIITA', 'COL6A5', 'CXCL12', 'CXCL13', 'CXCL9', 'CXCR6', 'FAS', 'FASL', 'GZMA', 'GZMK', 'IFNG', 'IL10', 'IL10RA', 'IL18', 'IL18BP', 'IL2RA', 'IL2RB', 'IRF1', 'IRF8', 'JAK2', 'LAG3', 'MIF', 'PDCD1LG2', 'PRF1', 'SERPING1', 'STAT1', 'TLR2', 'TLR8', 'UBASH3A', 'VWF']
+hla_cis_on = ['HLA-A', 'HLA-B', 'HLA-DMA', 'HLA-DMB', 'HLA-DOA', 'HLA-DPA1', 'HLA-DPB1', 'HLA-DQA1', 'HLA-DQA2', 'HLA-DQB1', 'HLA-DQB2', 'HLA-DRA', 'HLA-DRB1', 'HLA-DRB5', 'HLA-DRB6', 'HLA-E', 'HLA-H']
+
+comb_cis_on = cis_on_show + hla_cis_on
+```
+
+
+```{r, fig.width=14, fig.height=10}
+buffer_df <- py$cis_on
+chosen_xlim <- 3
+EnhancedVolcano(buffer_df,
+                lab = rownames(buffer_df),
+                x = 'log2FoldChange',
+                y = 'padj',
+                selectLab =  py$comb_cis_on,
+                title = '',
+                titleLabSize = 15,
+                subtitle='',
+                subtitleLabSize = 14,
+                ylab = bquote(~-log[10] ~ '(adjusted p-value)'),
+                xlab = bquote('Log2FC\nHigher at baseline <--> Higher at on-Nivo'),
+                axisLabSize = 20,
+                ylim = c(0, 3.3),#c(0, max(max(-log10(buffer_df[['padj']]), na.rm = TRUE), -log10(0.1)) + 0.3),
+                xlim = c(-1.9,1.9),#c(-chosen_xlim - 0.3, chosen_xlim + 0.3),
+                pCutoff = 0.1,
+                FCcutoff = 0.5,
+                pointSize = 2.0,
+                labSize=5.0,
+                legendPosition = 'none',
+                widthConnectors = 0.35,
+                arrowheads = F,
+                drawConnectors=TRUE,
+                boxedLabels = T,
+                caption = '',
+                max.overlaps = 50,
+                col = c("grey30", "grey30", "grey30", "red2")
+)
+ggsave("SupplFig_6E_Diffexpr_Cis_baseline_vs_OnNivo.pdf")
+```
+
+```{r, fig.width=12, fig.height=8}
+buffer_df <- py$cis_on
+chosen_xlim <- max(abs(min(buffer_df[['log2FoldChange']], na.rm = TRUE)), abs(max(buffer_df[['log2FoldChange']], na.rm = TRUE)))
+EnhancedVolcano(buffer_df,
+                lab = rownames(buffer_df),
+                x = 'log2FoldChange',
+                y = 'padj',
+                title = '',
+                titleLabSize = 15,
+                subtitle='',
+                subtitleLabSize = 14,
+                ylab = bquote(~-log[10] ~ '(adjusted p-value)'),
+                xlab = bquote('Log2FC\nHigher at baseline <--> Higher at on-Nivo'),
+                axisLabSize = 20,
+                ylim = c(0, max(max(-log10(buffer_df[['padj']]), na.rm = TRUE), -log10(0.1)) + 0.3),
+                xlim = c(-chosen_xlim - 0.3, chosen_xlim + 0.3),
+                pCutoff = 0.1,
+                FCcutoff = 0.5,
+                pointSize = 2.0,
+                labSize=5.0,
+                legendPosition = 'none',
+                widthConnectors = 0.35,
+                arrowheads = F,
+                drawConnectors=TRUE,
+                boxedLabels = T,
+                caption = '',
+                max.overlaps = 50,
+                col = c("grey30", "grey30", "grey30", "red2")
+)
+ggsave("SupplFig_6D_full_Diffexpr_Cis_baseline_vs_OnNivo.pdf")
+```
